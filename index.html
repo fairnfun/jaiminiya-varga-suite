@@ -64,9 +64,10 @@
     const DREKKANA_2 = [[1,12,4,9,7,6,10,3,1,12,4,9],[2,11,5,8,8,5,11,2,2,11,5,8],[3,10,6,7,9,4,12,1,3,10,6,7]];
 
     const GRAHAS = [
-      { id: 'asc', abbr: 'As', name: 'Ascendant', regex: /Ascendant|Asc/i },
+      // Erweiterte Regex für den Aszendenten
+      { id: 'asc', abbr: 'As', name: 'Ascendant', regex: /Ascendant|Ascendent|Asc|Lagna/i },
       { id: 'sun', abbr: 'Su', name: 'Sun', regex: /Sun/i },
-      // Moon Regex toleriert nun "M00n", "M0on" oder "Mo0n"
+      // Moon Regex bleibt tolerant für o/0
       { id: 'moon', abbr: 'Mo', name: 'Moon', regex: /M[o0][o0]n/i }, 
       { id: 'mars', abbr: 'Ma', name: 'Mars', regex: /Mars/i },
       { id: 'mercury', abbr: 'Me', name: 'Mercury', regex: /Mercury/i },
@@ -136,7 +137,7 @@
         setLoading(true);
         try {
           const { data: { text } } = await Tesseract.recognize(file, 'eng');
-          // Aggressive Bereinigung: O wird oft 0
+          // Bereinigung gängiger OCR-Fehler
           const cleanText = text.replace(/O/g, '0').replace(/[Il|]/g, '1');
           const newP = {
             asc: { deg: 0, min: 0, sec: 0 }, sun: { deg: 0, min: 0, sec: 0 }, moon: { deg: 0, min: 0, sec: 0 },
@@ -146,11 +147,11 @@
           
           GRAHAS.forEach(g => {
             if (g.id === 'ketu') return;
-            // Suchmuster: Sucht Namen + alles was keine Zahl ist + 3 Zahlengruppen
-            const pattern = new RegExp(`${g.regex.source}\\s*[^\\d]*(\\d+)[^\\d]+(\\d+)[^\\d]+(\\d+)`, 'i');
+            // Robustere Suche: Name + optionale Zeichen + 3 Zahlengruppen
+            const pattern = new RegExp(`(${g.regex.source})[\\s\\W]*(\\d+)[^\\d]+(\\d+)[^\\d]+(\\d+)`, 'i');
             const match = cleanText.match(pattern);
             if (match) {
-              newP[g.id] = { deg: parseInt(match[1]), min: parseInt(match[2]), sec: parseInt(match[3]) };
+              newP[g.id] = { deg: parseInt(match[2]), min: parseInt(match[3]), sec: parseInt(match[4]) };
             }
           });
           setPositions(newP);
@@ -203,4 +204,28 @@
                 </div>
               ))}
               <div className="bg-stone-200/50 p-2 rounded flex justify-between items-center border border-vedic-dark/5 italic opacity-60">
-                <label className="font-serif text-[10px] font-
+                <label className="font-serif text-[10px] font-bold text-vedic-dark uppercase w-20">Ketu</label>
+                <div className="flex gap-1 flex-1 text-center text-xs">Auto-calculated (Rahu + 180°)</div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+              <SouthIndianChart title="Navāṁśa 1" subtitle="Cārādi Guṇa Navaka" placements={mapPlacements('n1')} />
+              <SouthIndianChart title="Navāṁśa 2" subtitle="Trayāgni Tattva Navaka" placements={mapPlacements('n2')} />
+              <SouthIndianChart title="Drekkaṇa 1" subtitle="Parivṛtti-Traya" placements={mapPlacements('d1')} />
+              <SouthIndianChart title="Drekkaṇa 2" subtitle="Krama-Vyutkrama" placements={mapPlacements('d2')} />
+            </div>
+          </div>
+          
+          <footer className="text-center mt-20 text-vedic-dark/40 font-serif text-xs uppercase tracking-[0.3em] no-print">
+            Jaiminīya Varga Suite • Vedic Excellence
+          </footer>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

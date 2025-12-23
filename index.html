@@ -37,11 +37,14 @@
   <style>
     @media print { .no-print { display: none !important; } }
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    
     .chart-gradient-border {
       padding: 5px;
       background: linear-gradient(135deg, #7F1D1D 0%, #D97706 50%, #7F1D1D 100%);
       border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(45, 50, 67, 0.1);
     }
+
     .loader { border-top-color: #B45309; animation: spinner 1.2s linear infinite; }
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
@@ -62,7 +65,7 @@
 
     const GRAHAS = [
       { id: 'asc', abbr: 'As', name: 'Ascendant', regex: /Ascendant|Asc/i },
-      { id: 'sun', abbr: 'Su', name: 'Sun', regex: /Sun/i },
+      { id: 'sun', abbr: 'Su', name: 'Sun/i', regex: /Sun/i },
       { id: 'moon', abbr: 'Mo', name: 'Moon', regex: /Moon/i },
       { id: 'mars', abbr: 'Ma', name: 'Mars', regex: /Mars/i },
       { id: 'mercury', abbr: 'Me', name: 'Mercury', regex: /Mercury/i },
@@ -73,7 +76,7 @@
       { id: 'ketu', abbr: 'Ke', name: 'Ketu', regex: /Ketu/i }
     ];
 
-    const toDecimal = (d, m, s) => parseFloat(d || 0) + parseFloat(m || 0) / 60 + parseFloat(s || 0) / 3600;
+    const toDecimalDegrees = (d, m, s) => parseFloat(d || 0) + parseFloat(m || 0) / 60 + parseFloat(s || 0) / 3600;
 
     const calculateVargas = (dec) => {
       const norm = ((dec % 360) + 360) % 360;
@@ -88,23 +91,23 @@
       const order = [12, 1, 2, 3, 11, 'center', 4, 10, 'center_h', 5, 9, 8, 7, 6];
       return (
         <div className="chart-gradient-border">
-          <div className="grid grid-cols-4 aspect-square bg-vedic-dark gap-[1px] rounded-[4px] overflow-hidden border-[1px] border-vedic-dark">
+          <div className="grid grid-cols-4 aspect-square bg-vedic-dark gap-[1px] rounded-[3px] overflow-hidden border-[1px] border-vedic-dark">
             {order.map((cell, idx) => {
               if (cell === 'center') {
                 return (
                   <div key="center" className="col-span-2 row-span-2 flex flex-col items-center justify-center bg-vedic-bg p-2 border-2 border-vedic-dark">
-                    <span className="font-serif text-vedic-gold text-2xl md:text-3xl font-black leading-none mb-1">OM</span>
+                    <span className="font-serif text-vedic-gold text-2xl md:text-3xl font-black leading-none mb-1 uppercase tracking-widest">OM</span>
                     <h3 className="font-serif text-vedic-dark font-bold text-[9px] uppercase tracking-wider text-center">{title}</h3>
-                    <p className="text-[7px] text-vedic-dark/60 font-sans uppercase italic text-center mt-0.5 leading-tight">{subtitle}</p>
+                    <p className="text-[7px] text-vedic-dark/60 font-sans uppercase italic text-center mt-1 leading-tight">{subtitle}</p>
                   </div>
                 );
               }
               if (cell === 'center_h') return null;
               const grahas = placements[cell] || [];
               return (
-                <div key={cell} className="aspect-square flex flex-wrap content-center justify-center gap-0.5 p-1 bg-vedic-bg">
+                <div key={cell} className="aspect-square flex flex-wrap content-center justify-center gap-1 p-1 bg-vedic-bg">
                   {grahas.map(g => (
-                    <span key={g} className={`text-[9px] font-bold px-1 rounded-sm shadow-sm ${g === 'As' ? 'bg-vedic-dark text-vedic-bg' : 'bg-white border border-vedic-dark/10 text-vedic-dark'}`}>{g}</span>
+                    <span key={g} className={`text-[9px] font-bold px-1 py-0.5 rounded-sm shadow-sm ${g === 'As' ? 'bg-vedic-dark text-vedic-bg' : 'bg-white border border-vedic-dark/10 text-vedic-dark'}`}>{g}</span>
                   ))}
                 </div>
               );
@@ -116,14 +119,14 @@
 
     const App = () => {
       const [positions, setPositions] = useState({
-        asc: { d: 0, m: 0, s: 0 }, sun: { d: 0, m: 0, s: 0 }, moon: { d: 0, m: 0, s: 0 },
-        mars: { d: 0, m: 0, s: 0 }, mercury: { d: 0, m: 0, s: 0 }, jupiter: { d: 0, m: 0, s: 0 },
-        venus: { d: 0, m: 0, s: 0 }, saturn: { d: 0, m: 0, s: 0 }, rahu: { d: 0, m: 0, s: 0 }
+        asc: { deg: 0, min: 0, sec: 0 }, sun: { deg: 0, min: 0, sec: 0 }, moon: { deg: 0, min: 0, sec: 0 },
+        mars: { deg: 0, min: 0, sec: 0 }, mercury: { deg: 0, min: 0, sec: 0 }, jupiter: { deg: 0, min: 0, sec: 0 },
+        venus: { deg: 0, min: 0, sec: 0 }, saturn: { deg: 0, min: 0, sec: 0 }, rahu: { deg: 0, min: 0, sec: 0 }
       });
       const [loading, setLoading] = useState(false);
 
       const handleInput = (id, unit, val) => {
-        setPositions(prev => ({ ...prev, [id]: { ...prev[id], [unit]: val } }));
+        setPositions(prev => ({ ...prev, [id]: { ...prev[id], [unit]: parseInt(val) || 0 } }));
       };
 
       const handleOCR = async (e) => {
@@ -132,29 +135,34 @@
         setLoading(true);
         try {
           const { data: { text } } = await Tesseract.recognize(file, 'eng');
-          const cleanText = text.replace(/[Oo]/g, '0'); // Korrigiert typische OCR-Fehler (O -> 0)
-          const newP = { ...positions };
+          // Bereinigung: O -> 0, I/l -> 1
+          const cleanText = text.replace(/O/g, '0').replace(/[Il]/g, '1');
+          const newP = {
+            asc: { deg: 0, min: 0, sec: 0 }, sun: { deg: 0, min: 0, sec: 0 }, moon: { deg: 0, min: 0, sec: 0 },
+            mars: { deg: 0, min: 0, sec: 0 }, mercury: { deg: 0, min: 0, sec: 0 }, jupiter: { deg: 0, min: 0, sec: 0 },
+            venus: { deg: 0, min: 0, sec: 0 }, saturn: { deg: 0, min: 0, sec: 0 }, rahu: { deg: 0, min: 0, sec: 0 }
+          };
           
           GRAHAS.forEach(g => {
             if (g.id === 'ketu') return;
-            // Sucht Namen + beliebig viele Nicht-Zahlen + 3 Zahlengruppen
-            const pattern = new RegExp(`(${g.regex.source})[^0-9]+(\\d+)[^0-9]+(\\d+)[^0-9]+(\\d+)`, 'i');
+            // Sucht Namen + alles was keine Zahl ist + 3 Zahlengruppen
+            const pattern = new RegExp(`${g.regex.source}\\s*(\\d+)[^\\d]+(\\d+)[^\\d]+(\\d+)`, 'i');
             const match = cleanText.match(pattern);
             if (match) {
-              newP[g.id] = { d: parseInt(match[2]), m: parseInt(match[3]), s: parseInt(match[4]) };
+              newP[g.id] = { deg: parseInt(match[1]), min: parseInt(match[2]), sec: parseInt(match[3]) };
             }
           });
           setPositions(newP);
-        } catch (err) { alert("Fehler beim Lesen des Bildes."); }
+        } catch (err) { alert("OCR Fehler beim Auslesen."); }
         setLoading(false);
       };
 
       const vargaResults = useMemo(() => {
-        const rDec = toDecimal(positions.rahu.d, positions.rahu.m, positions.rahu.s);
+        const rDec = toDecimalDegrees(positions.rahu.deg, positions.rahu.min, positions.rahu.sec);
         const kDec = (rDec + 180) % 360;
         const res = {};
         GRAHAS.forEach(g => {
-          const dec = g.id === 'ketu' ? kDec : toDecimal(positions[g.id].d, positions[g.id].m, positions[g.id].s);
+          const dec = g.id === 'ketu' ? kDec : toDecimalDegrees(positions[g.id].deg, positions[g.id].min, positions[g.id].sec);
           res[g.id] = calculateVargas(dec);
         });
         return res;
@@ -182,17 +190,21 @@
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             <div className="lg:col-span-4 space-y-3 no-print">
-              <h2 className="font-serif text-lg font-bold text-vedic-dark mb-4 border-b border-vedic-dark/20 pb-2">Positions</h2>
+              <h2 className="font-serif text-lg font-bold text-vedic-dark mb-4 border-b border-vedic-dark/20 pb-2 uppercase tracking-tight">Positions</h2>
               {GRAHAS.filter(g => g.id !== 'ketu').map(g => (
                 <div key={g.id} className="bg-white/60 p-2 rounded flex justify-between items-center border border-vedic-dark/5 shadow-sm">
                   <label className="font-serif text-[10px] font-bold text-vedic-dark uppercase w-20">{g.name}</label>
                   <div className="flex gap-1 flex-1">
-                    {['d','m','s'].map(u => (
+                    {['deg','min','sec'].map(u => (
                       <input key={u} type="number" value={positions[g.id][u]} onChange={(e) => handleInput(g.id, u, e.target.value)} className="w-full text-center text-xs bg-transparent border-b border-vedic-dark/20 focus:border-vedic-gold outline-none py-1 font-medium" />
                     ))}
                   </div>
                 </div>
               ))}
+              <div className="bg-stone-200/50 p-2 rounded flex justify-between items-center border border-vedic-dark/5 italic opacity-60">
+                <label className="font-serif text-[10px] font-bold text-vedic-dark uppercase w-20">Ketu</label>
+                <div className="flex gap-1 flex-1 text-center text-xs">Auto-calculated (Rahu + 180°)</div>
+              </div>
             </div>
 
             <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-10">

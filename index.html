@@ -37,112 +37,74 @@
   <style>
     @media print { .no-print { display: none !important; } }
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    
     .chart-gradient-border {
-      padding: 6px;
+      padding: 5px;
       background: linear-gradient(135deg, #7F1D1D 0%, #D97706 50%, #7F1D1D 100%);
       border-radius: 8px;
     }
-
     .loader { border-top-color: #B45309; animation: spinner 1.2s linear infinite; }
     @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="bg-vedic-bg text-vedic-dark font-sans">
+<body class="bg-vedic-bg text-vedic-dark font-sans transition-all duration-300">
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useMemo } = React;
 
     // ============================================
-    // 1:1 LOGIK & DATEN AUS JAIMINI.HTML
+    // VERIFIZIERTE LOGIK AUS JAIMINI.HTML
     // ============================================
-
-    const NAVAMSA_1 = [[1, 10, 7, 4, 1, 10, 7, 4, 1, 10, 7, 4], [2, 9, 8, 3, 2, 9, 8, 3, 2, 9, 8, 3], [3, 8, 9, 2, 3, 8, 9, 2, 3, 8, 9, 2], [4, 7, 10, 1, 4, 7, 10, 1, 4, 7, 10, 1], [5, 6, 11, 12, 5, 6, 11, 12, 5, 6, 11, 12], [6, 5, 12, 11, 6, 5, 12, 11, 6, 5, 12, 11], [7, 4, 1, 10, 7, 4, 1, 10, 7, 4, 1, 10], [8, 3, 2, 9, 8, 3, 2, 9, 8, 3, 2, 9], [9, 2, 3, 8, 9, 2, 3, 8, 9, 2, 3, 8]];
-    const NAVAMSA_2 = [[1, 5, 9, 1, 5, 9, 1, 5, 9, 1, 5, 9], [2, 6, 10, 2, 6, 10, 2, 6, 10, 2, 6, 10], [3, 7, 11, 3, 7, 11, 3, 7, 11, 3, 7, 11], [4, 8, 12, 4, 8, 12, 4, 8, 12, 4, 8, 12], [5, 9, 1, 5, 9, 1, 5, 9, 1, 5, 9, 1], [6, 10, 2, 6, 10, 2, 6, 10, 2, 6, 10, 2], [7, 11, 3, 7, 11, 3, 7, 11, 3, 7, 11, 3], [8, 12, 4, 8, 12, 4, 8, 12, 4, 8, 12, 4], [9, 1, 5, 9, 1, 5, 9, 1, 5, 9, 1, 5]];
-    const DREKKANA_1 = [[1, 4, 7, 10, 1, 1, 7, 10, 1, 1, 7, 10], [2, 5, 8, 11, 2, 2, 8, 11, 2, 2, 8, 11], [3, 6, 9, 12, 3, 3, 9, 12, 3, 3, 9, 12]];
-    const DREKKANA_2 = [[1, 12, 4, 9, 7, 6, 10, 3, 1, 12, 4, 9], [2, 11, 5, 8, 8, 5, 11, 2, 2, 11, 5, 8], [3, 10, 6, 7, 9, 4, 12, 1, 3, 10, 6, 7]];
+    const NAVAMSA_1 = [[1,10,7,4,1,10,7,4,1,10,7,4],[2,9,8,3,2,9,8,3,2,9,8,3],[3,8,9,2,3,8,9,2,3,8,9,2],[4,7,10,1,4,7,10,1,4,7,10,1],[5,6,11,12,5,6,11,12,5,6,11,12],[6,5,12,11,6,5,12,11,6,5,12,11],[7,4,1,10,7,4,1,10,7,4,1,10],[8,3,2,9,8,3,2,9,8,3,2,9],[9,2,3,8,9,2,3,8,9,2,3,8]];
+    const NAVAMSA_2 = [[1,5,9,1,5,9,1,5,9,1,5,9],[2,6,10,2,6,10,2,6,10,2,6,10],[3,7,11,3,7,11,3,7,11,3,7,11],[4,8,12,4,8,12,4,8,12,4,8,12],[5,9,1,5,9,1,5,9,1,5,9,1],[6,10,2,6,10,2,6,10,2,6,10,2],[7,11,3,7,11,3,7,11,3,7,11,3],[8,12,4,8,12,4,8,12,4,8,12,4],[9,1,5,9,1,5,9,1,5,9,1,5]];
+    const DREKKANA_1 = [[1,4,7,10,1,1,7,10,1,1,7,10],[2,5,8,11,2,2,8,11,2,2,8,11],[3,6,9,12,3,3,9,12,3,3,9,12]];
+    const DREKKANA_2 = [[1,12,4,9,7,6,10,3,1,12,4,9],[2,11,5,8,8,5,11,2,2,11,5,8],[3,10,6,7,9,4,12,1,3,10,6,7]];
 
     const GRAHAS = [
-      { id: 'asc', abbr: 'As', en: 'Ascendant', label: 'Ascendant' },
-      { id: 'sun', abbr: 'Su', en: 'Sun', label: 'Sun' },
-      { id: 'moon', abbr: 'Mo', en: 'Moon', label: 'Moon' },
-      { id: 'mars', abbr: 'Ma', en: 'Mars', label: 'Mars' },
-      { id: 'mercury', abbr: 'Me', en: 'Mercury', label: 'Mercury' },
-      { id: 'jupiter', abbr: 'Ju', en: 'Jupiter', label: 'Jupiter' },
-      { id: 'venus', abbr: 'Ve', en: 'Venus', label: 'Venus' },
-      { id: 'saturn', abbr: 'Sa', en: 'Saturn', label: 'Saturn' },
-      { id: 'rahu', abbr: 'Ra', en: 'Rahu', label: 'Rahu' },
-      { id: 'ketu', abbr: 'Ke', en: 'Ketu', label: 'Ketu' },
+      { id: 'asc', abbr: 'As', name: 'Ascendant', regex: /Ascendant|Asc/i },
+      { id: 'sun', abbr: 'Su', name: 'Sun', regex: /Sun/i },
+      { id: 'moon', abbr: 'Mo', name: 'Moon', regex: /Moon/i },
+      { id: 'mars', abbr: 'Ma', name: 'Mars', regex: /Mars/i },
+      { id: 'mercury', abbr: 'Me', name: 'Mercury', regex: /Mercury/i },
+      { id: 'jupiter', abbr: 'Ju', name: 'Jupiter', regex: /Jupiter/i },
+      { id: 'venus', abbr: 'Ve', name: 'Venus', regex: /Venus/i },
+      { id: 'saturn', abbr: 'Sa', name: 'Saturn', regex: /Saturn/i },
+      { id: 'rahu', abbr: 'Ra', name: 'Rahu', regex: /Rahu/i },
+      { id: 'ketu', abbr: 'Ke', name: 'Ketu', regex: /Ketu/i }
     ];
 
-    function toDecimalDegrees(deg, min, sec) {
-      return parseFloat(deg || 0) + parseFloat(min || 0) / 60 + parseFloat(sec || 0) / 3600;
-    }
+    const toDecimal = (d, m, s) => parseFloat(d || 0) + parseFloat(m || 0) / 60 + parseFloat(s || 0) / 3600;
 
-    function getRasiIndex(decimalDeg) {
-      const normalized = ((decimalDeg % 360) + 360) % 360;
-      return Math.floor(normalized / 30);
-    }
-
-    function getPositionInRasi(decimalDeg) {
-      const normalized = ((decimalDeg % 360) + 360) % 360;
-      return normalized % 30;
-    }
-
-    function getNavamsaSection(posInRasi) {
-      const sectionSize = 30 / 9; 
-      const section = Math.floor(posInRasi / sectionSize);
-      return Math.min(section, 8);
-    }
-
-    function getDrekkanaSection(posInRasi) {
-      const section = Math.floor(posInRasi / 10);
-      return Math.min(section, 2);
-    }
-
-    function calculateAllVargas(decimalDeg) {
-      const rasiIndex = getRasiIndex(decimalDeg);
-      const posInRasi = getPositionInRasi(decimalDeg);
-      const navSection = getNavamsaSection(posInRasi);
-      const drekSection = getDrekkanaSection(posInRasi);
-
-      return {
-        rasiNum: rasiIndex + 1,
-        navamsa1: NAVAMSA_1[navSection][rasiIndex],
-        navamsa2: NAVAMSA_2[navSection][rasiIndex],
-        drekkana1: DREKKANA_1[drekSection][rasiIndex],
-        drekkana2: DREKKANA_2[drekSection][rasiIndex],
-      };
-    }
-
-    // ============================================
-    // UI KOMPONENTEN
-    // ============================================
+    const calculateVargas = (dec) => {
+      const norm = ((dec % 360) + 360) % 360;
+      const rIdx = Math.floor(norm / 30);
+      const pos = norm % 30;
+      const nSec = Math.min(Math.floor(pos / (30/9)), 8);
+      const dSec = Math.min(Math.floor(pos / 10), 2);
+      return { n1: NAVAMSA_1[nSec][rIdx], n2: NAVAMSA_2[nSec][rIdx], d1: DREKKANA_1[dSec][rIdx], d2: DREKKANA_2[dSec][rIdx] };
+    };
 
     const SouthIndianChart = ({ title, subtitle, placements }) => {
-      const chartOrder = [12, 1, 2, 3, 11, 'center', 4, 10, 'center_h', 5, 9, 8, 7, 6];
+      const order = [12, 1, 2, 3, 11, 'center', 4, 10, 'center_h', 5, 9, 8, 7, 6];
       return (
         <div className="chart-gradient-border">
-          <div className="grid grid-cols-4 aspect-square bg-vedic-dark gap-[1px] rounded-[3px] overflow-hidden border-[1px] border-vedic-dark">
-            {chartOrder.map((cell, idx) => {
+          <div className="grid grid-cols-4 aspect-square bg-vedic-dark gap-[1px] rounded-[4px] overflow-hidden border-[1px] border-vedic-dark">
+            {order.map((cell, idx) => {
               if (cell === 'center') {
                 return (
                   <div key="center" className="col-span-2 row-span-2 flex flex-col items-center justify-center bg-vedic-bg p-2 border-2 border-vedic-dark">
                     <span className="font-serif text-vedic-gold text-2xl md:text-3xl font-black leading-none mb-1">OM</span>
                     <h3 className="font-serif text-vedic-dark font-bold text-[9px] uppercase tracking-wider text-center">{title}</h3>
-                    <p className="text-[7px] text-vedic-dark/60 font-sans uppercase italic text-center mt-1">{subtitle}</p>
+                    <p className="text-[7px] text-vedic-dark/60 font-sans uppercase italic text-center mt-0.5 leading-tight">{subtitle}</p>
                   </div>
                 );
               }
               if (cell === 'center_h') return null;
               const grahas = placements[cell] || [];
               return (
-                <div key={cell} className="aspect-square flex flex-wrap content-center justify-center gap-1 p-1 bg-vedic-bg">
+                <div key={cell} className="aspect-square flex flex-wrap content-center justify-center gap-0.5 p-1 bg-vedic-bg">
                   {grahas.map(g => (
-                    <span key={g} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm shadow-sm ${g === 'As' ? 'bg-vedic-dark text-vedic-bg' : 'bg-white border border-vedic-dark/20 text-vedic-dark'}`}>
-                      {g}
-                    </span>
+                    <span key={g} className={`text-[9px] font-bold px-1 rounded-sm shadow-sm ${g === 'As' ? 'bg-vedic-dark text-vedic-bg' : 'bg-white border border-vedic-dark/10 text-vedic-dark'}`}>{g}</span>
                   ))}
                 </div>
               );
@@ -154,14 +116,14 @@
 
     const App = () => {
       const [positions, setPositions] = useState({
-        asc: { deg: 0, min: 0, sec: 0 }, sun: { deg: 0, min: 0, sec: 0 }, moon: { deg: 0, min: 0, sec: 0 },
-        mars: { deg: 0, min: 0, sec: 0 }, mercury: { deg: 0, min: 0, sec: 0 }, jupiter: { deg: 0, min: 0, sec: 0 },
-        venus: { deg: 0, min: 0, sec: 0 }, saturn: { deg: 0, min: 0, sec: 0 }, rahu: { deg: 0, min: 0, sec: 0 }
+        asc: { d: 0, m: 0, s: 0 }, sun: { d: 0, m: 0, s: 0 }, moon: { d: 0, m: 0, s: 0 },
+        mars: { d: 0, m: 0, s: 0 }, mercury: { d: 0, m: 0, s: 0 }, jupiter: { d: 0, m: 0, s: 0 },
+        venus: { d: 0, m: 0, s: 0 }, saturn: { d: 0, m: 0, s: 0 }, rahu: { d: 0, m: 0, s: 0 }
       });
       const [loading, setLoading] = useState(false);
 
       const handleInput = (id, unit, val) => {
-        setPositions(prev => ({ ...prev, [id]: { ...prev[id], [unit]: parseInt(val) || 0 } }));
+        setPositions(prev => ({ ...prev, [id]: { ...prev[id], [unit]: val } }));
       };
 
       const handleOCR = async (e) => {
@@ -170,26 +132,30 @@
         setLoading(true);
         try {
           const { data: { text } } = await Tesseract.recognize(file, 'eng');
+          const cleanText = text.replace(/[Oo]/g, '0'); // Korrigiert typische OCR-Fehler (O -> 0)
           const newP = { ...positions };
-          const regex = /(Ascendant|Sun|Moon|Mars|Mercury|Jupiter|Venus|Saturn|Rahu)\s+(\d+)°\s+(\d+)'\s+(\d+)"/gi;
-          let m;
-          while ((m = regex.exec(text)) !== null) {
-            const g = GRAHAS.find(x => x.label === m[1]);
-            if (g) newP[g.id] = { deg: parseInt(m[2]), min: parseInt(m[3]), sec: parseInt(m[4]) };
-          }
+          
+          GRAHAS.forEach(g => {
+            if (g.id === 'ketu') return;
+            // Sucht Namen + beliebig viele Nicht-Zahlen + 3 Zahlengruppen
+            const pattern = new RegExp(`(${g.regex.source})[^0-9]+(\\d+)[^0-9]+(\\d+)[^0-9]+(\\d+)`, 'i');
+            const match = cleanText.match(pattern);
+            if (match) {
+              newP[g.id] = { d: parseInt(match[2]), m: parseInt(match[3]), s: parseInt(match[4]) };
+            }
+          });
           setPositions(newP);
-        } catch (err) { alert("OCR Fehler."); }
+        } catch (err) { alert("Fehler beim Lesen des Bildes."); }
         setLoading(false);
       };
 
-      const finalResults = useMemo(() => {
-        const rahuDec = toDecimalDegrees(positions.rahu.deg, positions.rahu.min, positions.rahu.sec);
-        const ketuDec = (rahuDec + 180) % 360;
-        
+      const vargaResults = useMemo(() => {
+        const rDec = toDecimal(positions.rahu.d, positions.rahu.m, positions.rahu.s);
+        const kDec = (rDec + 180) % 360;
         const res = {};
         GRAHAS.forEach(g => {
-          const dec = g.id === 'ketu' ? ketuDec : toDecimalDegrees(positions[g.id].deg, positions[g.id].min, positions[g.id].sec);
-          res[g.id] = calculateAllVargas(dec);
+          const dec = g.id === 'ketu' ? kDec : toDecimal(positions[g.id].d, positions[g.id].m, positions[g.id].s);
+          res[g.id] = calculateVargas(dec);
         });
         return res;
       }, [positions]);
@@ -197,7 +163,7 @@
       const mapPlacements = (key) => {
         const p = {};
         GRAHAS.forEach(g => {
-          const rasi = finalResults[g.id][key];
+          const rasi = vargaResults[g.id][key];
           if (!p[rasi]) p[rasi] = []; p[rasi].push(g.abbr);
         });
         return p;
@@ -206,7 +172,7 @@
       return (
         <div className="max-w-6xl mx-auto px-4 py-12">
           <header className="text-center mb-16 no-print">
-            <h1 className="font-serif text-3xl text-vedic-dark font-black tracking-[0.2em] mb-8 uppercase">Jaiminīya Varga Calculator</h1>
+            <h1 className="font-serif text-3xl text-vedic-dark font-extrabold tracking-[0.2em] mb-8 uppercase">Jaiminīya Varga Calculator</h1>
             <label className="cursor-pointer bg-vedic-dark text-vedic-bg px-6 py-3 rounded shadow hover:bg-vedic-dark/90 transition-all font-bold text-xs uppercase tracking-widest">
                📷 Upload Graha Screenshot
                <input type="file" className="hidden" accept="image/*" onChange={handleOCR} disabled={loading} />
@@ -221,7 +187,7 @@
                 <div key={g.id} className="bg-white/60 p-2 rounded flex justify-between items-center border border-vedic-dark/5 shadow-sm">
                   <label className="font-serif text-[10px] font-bold text-vedic-dark uppercase w-20">{g.name}</label>
                   <div className="flex gap-1 flex-1">
-                    {['deg','min','sec'].map(u => (
+                    {['d','m','s'].map(u => (
                       <input key={u} type="number" value={positions[g.id][u]} onChange={(e) => handleInput(g.id, u, e.target.value)} className="w-full text-center text-xs bg-transparent border-b border-vedic-dark/20 focus:border-vedic-gold outline-none py-1 font-medium" />
                     ))}
                   </div>
@@ -230,10 +196,10 @@
             </div>
 
             <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-10">
-              <SouthIndianChart title="Navāṁśa 1" subtitle="Cārādi Guṇa Navaka" placements={mapPlacements('navamsa1')} />
-              <SouthIndianChart title="Navāṁśa 2" subtitle="Trayāgni Tattva Navaka" placements={mapPlacements('navamsa2')} />
-              <SouthIndianChart title="Drekkaṇa 1" subtitle="Parivṛtti-Traya" placements={mapPlacements('drekkana1')} />
-              <SouthIndianChart title="Drekkaṇa 2" subtitle="Krama-Vyutkrama" placements={mapPlacements('drekkana2')} />
+              <SouthIndianChart title="Navāṁśa 1" subtitle="Cārādi Guṇa Navaka" placements={mapPlacements('n1')} />
+              <SouthIndianChart title="Navāṁśa 2" subtitle="Trayāgni Tattva Navaka" placements={mapPlacements('n2')} />
+              <SouthIndianChart title="Drekkaṇa 1" subtitle="Parivṛtti-Traya" placements={mapPlacements('d1')} />
+              <SouthIndianChart title="Drekkaṇa 2" subtitle="Krama-Vyutkrama" placements={mapPlacements('d2')} />
             </div>
           </div>
           

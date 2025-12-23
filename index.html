@@ -65,8 +65,9 @@
 
     const GRAHAS = [
       { id: 'asc', abbr: 'As', name: 'Ascendant', regex: /Ascendant|Asc/i },
-      { id: 'sun', abbr: 'Su', name: 'Sun/i', regex: /Sun/i },
-      { id: 'moon', abbr: 'Mo', name: 'Moon', regex: /Moon/i },
+      { id: 'sun', abbr: 'Su', name: 'Sun', regex: /Sun/i },
+      // Moon Regex toleriert nun "M00n", "M0on" oder "Mo0n"
+      { id: 'moon', abbr: 'Mo', name: 'Moon', regex: /M[o0][o0]n/i }, 
       { id: 'mars', abbr: 'Ma', name: 'Mars', regex: /Mars/i },
       { id: 'mercury', abbr: 'Me', name: 'Mercury', regex: /Mercury/i },
       { id: 'jupiter', abbr: 'Ju', name: 'Jupiter', regex: /Jupiter/i },
@@ -107,7 +108,7 @@
               return (
                 <div key={cell} className="aspect-square flex flex-wrap content-center justify-center gap-1 p-1 bg-vedic-bg">
                   {grahas.map(g => (
-                    <span key={g} className={`text-[9px] font-bold px-1 py-0.5 rounded-sm shadow-sm ${g === 'As' ? 'bg-vedic-dark text-vedic-bg' : 'bg-white border border-vedic-dark/10 text-vedic-dark'}`}>{g}</span>
+                    <span key={g} className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm shadow-sm ${g === 'As' ? 'bg-vedic-dark text-vedic-bg' : 'bg-white border border-vedic-dark/10 text-vedic-dark'}`}>{g}</span>
                   ))}
                 </div>
               );
@@ -135,8 +136,8 @@
         setLoading(true);
         try {
           const { data: { text } } = await Tesseract.recognize(file, 'eng');
-          // Bereinigung: O -> 0, I/l -> 1
-          const cleanText = text.replace(/O/g, '0').replace(/[Il]/g, '1');
+          // Aggressive Bereinigung: O wird oft 0
+          const cleanText = text.replace(/O/g, '0').replace(/[Il|]/g, '1');
           const newP = {
             asc: { deg: 0, min: 0, sec: 0 }, sun: { deg: 0, min: 0, sec: 0 }, moon: { deg: 0, min: 0, sec: 0 },
             mars: { deg: 0, min: 0, sec: 0 }, mercury: { deg: 0, min: 0, sec: 0 }, jupiter: { deg: 0, min: 0, sec: 0 },
@@ -145,8 +146,8 @@
           
           GRAHAS.forEach(g => {
             if (g.id === 'ketu') return;
-            // Sucht Namen + alles was keine Zahl ist + 3 Zahlengruppen
-            const pattern = new RegExp(`${g.regex.source}\\s*(\\d+)[^\\d]+(\\d+)[^\\d]+(\\d+)`, 'i');
+            // Suchmuster: Sucht Namen + alles was keine Zahl ist + 3 Zahlengruppen
+            const pattern = new RegExp(`${g.regex.source}\\s*[^\\d]*(\\d+)[^\\d]+(\\d+)[^\\d]+(\\d+)`, 'i');
             const match = cleanText.match(pattern);
             if (match) {
               newP[g.id] = { deg: parseInt(match[1]), min: parseInt(match[2]), sec: parseInt(match[3]) };
@@ -202,28 +203,4 @@
                 </div>
               ))}
               <div className="bg-stone-200/50 p-2 rounded flex justify-between items-center border border-vedic-dark/5 italic opacity-60">
-                <label className="font-serif text-[10px] font-bold text-vedic-dark uppercase w-20">Ketu</label>
-                <div className="flex gap-1 flex-1 text-center text-xs">Auto-calculated (Rahu + 180°)</div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-10">
-              <SouthIndianChart title="Navāṁśa 1" subtitle="Cārādi Guṇa Navaka" placements={mapPlacements('n1')} />
-              <SouthIndianChart title="Navāṁśa 2" subtitle="Trayāgni Tattva Navaka" placements={mapPlacements('n2')} />
-              <SouthIndianChart title="Drekkaṇa 1" subtitle="Parivṛtti-Traya" placements={mapPlacements('d1')} />
-              <SouthIndianChart title="Drekkaṇa 2" subtitle="Krama-Vyutkrama" placements={mapPlacements('d2')} />
-            </div>
-          </div>
-          
-          <footer className="text-center mt-20 text-vedic-dark/40 font-serif text-xs uppercase tracking-[0.3em] no-print">
-            Jaiminīya Varga Suite • Vedic Excellence
-          </footer>
-        </div>
-      );
-    };
-
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
-  </script>
-</body>
-</html>
+                <label className="font-serif text-[10px] font-
